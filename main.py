@@ -4,7 +4,6 @@ import re
 import argparse
 
 
-# Step 1: Read the JSON data from a file
 def read_input_json(file_path):
     try:
         with open(file_path, "r") as f:
@@ -17,7 +16,6 @@ def read_input_json(file_path):
         exit(1)
 
 
-# Step 2: Check if a package exists using npm info
 def is_package_available(package_name):
     try:
         subprocess.run(
@@ -31,7 +29,6 @@ def is_package_available(package_name):
         return False
 
 
-# Step 3: Filter technologies based on "slug" and valid versions
 def filter_packages(json_data):
     valid_packages = {}
     for package in json_data.get("technologies", []):
@@ -48,14 +45,12 @@ def filter_packages(json_data):
     return valid_packages
 
 
-# Step 4: Sanitize package names
 def sanitize_package_name(name):
     sanitized_name = re.sub(r"[^a-zA-Z0-9-_]", "-", name).lower()
     print(f"Sanitized package name: {name} -> {sanitized_name}")
     return sanitized_name
 
 
-# Step 5: Create a package.json structure
 def create_package_json(dependencies, output_path):
     if not dependencies:
         print("No valid dependencies found. Exiting.")
@@ -71,7 +66,6 @@ def create_package_json(dependencies, output_path):
     print(f"Generated {output_path}.")
 
 
-# Step 6: Install dependencies using npm
 def install_dependencies():
     try:
         print("Creating package-lock.json...")
@@ -83,7 +77,6 @@ def install_dependencies():
         exit(1)
 
 
-# Step 7: Run npm audit to check for vulnerabilities
 def run_npm_audit():
     try:
         print("Running npm audit...")
@@ -101,7 +94,6 @@ def run_npm_audit():
         exit(1)
 
 
-# Main function
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Check vulnerabilities in NPM packages based on JSON input.")
@@ -114,19 +106,14 @@ def main():
     )
     args = parser.parse_args()
 
-    # Step 1: Read the input JSON file
     json_data = read_input_json(args.input_file)
 
-    # Step 2: Filter packages with valid names and versions
     dependencies = filter_packages(json_data)
 
-    # Step 3: Create package.json
     create_package_json(dependencies, args.output_file)
 
-    # Step 4: Install dependencies and create a lock file
     install_dependencies()
 
-    # Step 5: Run npm audit to check for vulnerabilities
     run_npm_audit()
 
 
