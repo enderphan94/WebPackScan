@@ -2,23 +2,18 @@
 
 A Python tool to identify vulnerabilities in NPM packages extracted from websites using Wappalyzer.
 
-Features
+**Features**
 
-	•	Extracts package information using Wappalyzer.
+- Extracts package information using Wappalyzer.
+- Filters JavaScript libraries and verifies their availability in the NPM registry.
+- Generates a package.json file for valid dependencies.
+- Runs npm audit to detect vulnerabilities and saves a detailed report.
 
-	•	Filters JavaScript libraries and verifies their availability in the NPM registry.
+**Prerequisites**
 
-	•	Generates a package.json file for valid dependencies.
-
-	•	Runs npm audit to detect vulnerabilities and saves a detailed report.
-
-Prerequisites
-
-	1.	Install Node.js and NPM: Node.js Downloads.
-
-	2.	Install Python (3.6+).
-
-	3.	Install Wappalyzer:
+1.	Install Node.js and NPM: Node.js Downloads.
+2.	Install Python (3.6+).
+3.	Install Wappalyzer:
 
 ```
 git clone https://github.com/tunetheweb/wappalyzer.git
@@ -58,7 +53,7 @@ node src/drivers/npm/cli.js https://example.com >> input.json
 python script_name.py input.json
 ```
 
-Console Output:
+**Console Output**
 
 ```
 Sanitized package name: Lodash -> lodash
