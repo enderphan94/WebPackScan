@@ -42,9 +42,6 @@ Specify a custom name for the generated package.json:
 
 ```python script_name.py input.json --output-file custom-package.json```
 
-**Output**
-- package.json: Contains valid dependencies.
-- audit-report.txt: Detailed vulnerability report.
 
 **Example**
 
