@@ -3,14 +3,21 @@
 A Python tool to identify vulnerabilities in NPM packages extracted from websites using Wappalyzer.
 
 Features
+
 	•	Extracts package information using Wappalyzer.
+
 	•	Filters JavaScript libraries and verifies their availability in the NPM registry.
+
 	•	Generates a package.json file for valid dependencies.
+
 	•	Runs npm audit to detect vulnerabilities and saves a detailed report.
 
 Prerequisites
+
 	1.	Install Node.js and NPM: Node.js Downloads.
+
 	2.	Install Python (3.6+).
+
 	3.	Install Wappalyzer:
 
 ```
