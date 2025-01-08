@@ -1,4 +1,4 @@
-# Vulnerability Checker Tool
+# Check NPM Packages Vulnerability  
 
 A Python tool to identify vulnerabilities in NPM packages extracted from websites using Wappalyzer.
 
@@ -42,11 +42,11 @@ Specify a custom name for the generated package.json:
 
 ```python script_name.py input.json --output-file custom-package.json```
 
-Output
-	•	package.json: Contains valid dependencies.
-	•	audit-report.txt: Detailed vulnerability report.
+**Output**
+- package.json: Contains valid dependencies.
+- audit-report.txt: Detailed vulnerability report.
 
-Example
+**Example**
 
 ```
 node src/drivers/npm/cli.js https://example.com >> input.json
