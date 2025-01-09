@@ -29,19 +29,48 @@ def is_package_available(package_name):
         return False
 
 
+def get_valid_versions(package_name):
+    try:
+        result = subprocess.run(
+            ["npm", "view", package_name, "versions", "--json"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        versions = json.loads(result.stdout)
+        return versions if isinstance(versions, list) else []
+    except subprocess.CalledProcessError:
+        print(f"Error: Unable to fetch versions for package {package_name}.")
+        return []
+
+
 def filter_packages(json_data):
     valid_packages = {}
     for package in json_data.get("technologies", []):
+        # Skip packages with confidence == 0
+        if package.get("confidence", 0) == 0:
+            print(f"Skipping package with confidence 0: {package['name']}")
+            continue
+
+        # Skip packages not in 'javascript-libraries'
         if not any(category.get("slug") == "javascript-libraries" for category in package.get("categories", [])):
             print(f"Skipping package not in 'javascript-libraries': {package['name']}")
             continue
 
         name = sanitize_package_name(package["name"])
         version = package.get("version")
-        if version and is_package_available(name):
-            valid_packages[name] = version
+        if not version:
+            print(f"Skipping package with no version specified: {name}")
+            continue
+
+        if is_package_available(name):
+            valid_versions = get_valid_versions(name)
+            if version in valid_versions:
+                valid_packages[name] = version
+            else:
+                print(f"Skipping package {name} with invalid version {version}. Valid versions: {valid_versions}")
         else:
-            print(f"Skipping invalid or unavailable package: {name}")
+            print(f"Skipping unavailable package: {name}")
     return valid_packages
 
 
@@ -77,7 +106,7 @@ def install_dependencies():
         exit(1)
 
 
-def run_npm_audit():
+def run_npm_audit(audit_file):
     try:
         print("Running npm audit...")
         result = subprocess.run(["npm", "audit"], capture_output=True, text=True, check=False)
@@ -85,10 +114,10 @@ def run_npm_audit():
         # Print the full audit report
         print(result.stdout)
 
-        # Save the audit report to a file
-        with open("audit-report.txt", "w") as f:
+        # Save the audit report to the specified file
+        with open(audit_file, "w") as f:
             f.write(result.stdout)
-            print("Saved audit report to audit-report.txt.")
+            print(f"Saved audit report to {audit_file}.")
     except subprocess.CalledProcessError as e:
         print(f"Error during npm audit: {e.stderr}")
         exit(1)
@@ -104,6 +133,12 @@ def main():
         default="package.json",
         help="Path to the output package.json file (default: package.json)."
     )
+    parser.add_argument(
+        "--audit-file",
+        type=str,
+        default="audit-report.txt",
+        help="Path to save the audit report (default: audit-report.txt)."
+    )
     args = parser.parse_args()
 
     json_data = read_input_json(args.input_file)
@@ -114,7 +149,7 @@ def main():
 
     install_dependencies()
 
-    run_npm_audit()
+    run_npm_audit(args.audit_file)
 
 
 # Entry point

@@ -28,7 +28,7 @@ npm install
 
 Use Wappalyzer to crawl a website and save the data:
 
-```node src/drivers/npm/cli.js https://example.com >> input.json```
+```node src/drivers/npm/cli.js https://example.com > input.json```
 
 **Step 2: Run the Script**
 
