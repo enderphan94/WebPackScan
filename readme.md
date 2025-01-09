@@ -36,12 +36,6 @@ Run the vulnerability checker:
 
 ```python script_name.py input.json```
 
-**Step 3: Customize Output (Optional)**
-
-Specify a custom name for the generated package.json:
-
-```python script_name.py input.json --output-file custom-package.json```
-
 
 **Example**
 
