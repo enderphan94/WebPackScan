@@ -1,8 +1,10 @@
+import os
 import json
 import subprocess
 import re
 import argparse
-
+from pathlib import Path
+from tabulate import tabulate
 
 def read_input_json(file_path):
     try:
@@ -15,6 +17,21 @@ def read_input_json(file_path):
         print(f"Error: Invalid JSON format in file - {file_path}")
         exit(1)
 
+def print_technologies(json_data):
+    technologies = [
+        {
+            "Name": tech["name"],
+            "Version": tech["version"] if tech["version"] else "N/A"
+        }
+        for tech in json_data.get("technologies", [])
+        if tech["confidence"] == 100
+    ]
+    if technologies:
+        print("\n[RESULT] Technologies:")
+        print(tabulate(technologies, headers="keys", tablefmt="pretty"))
+        print("\n")
+    else:
+        print("\n[ERROR] No technologies found with confidence 100.")
 
 def is_package_available(package_name):
     try:
@@ -40,27 +57,21 @@ def get_valid_versions(package_name):
         versions = json.loads(result.stdout)
         return versions if isinstance(versions, list) else []
     except subprocess.CalledProcessError:
-        print(f"Error: Unable to fetch versions for package {package_name}.")
+        print(f"[Error]: Unable to fetch versions for package {package_name}.")
         return []
 
 
 def filter_packages(json_data):
     valid_packages = {}
     for package in json_data.get("technologies", []):
-        # Skip packages with confidence == 0
-        if package.get("confidence", 0) == 0:
-            print(f"Skipping package with confidence 0: {package['name']}")
-            continue
-
-        # Skip packages not in 'javascript-libraries'
         if not any(category.get("slug") == "javascript-libraries" for category in package.get("categories", [])):
-            print(f"Skipping package not in 'javascript-libraries': {package['name']}")
+            print(f"[INFO] Skipping package not in 'javascript-libraries': {package['name']}")
             continue
 
         name = sanitize_package_name(package["name"])
         version = package.get("version")
         if not version:
-            print(f"Skipping package with no version specified: {name}")
+            print(f"[INFO] Skipping package with no version specified: {name}")
             continue
 
         if is_package_available(name):
@@ -68,58 +79,108 @@ def filter_packages(json_data):
             if version in valid_versions:
                 valid_packages[name] = version
             else:
-                print(f"Skipping package {name} with invalid version {version}. Valid versions: {valid_versions}")
+                print(f"[INFO] Skipping package {name} with invalid version {version}. Valid versions: {valid_versions}")
         else:
-            print(f"Skipping unavailable package: {name}")
+            print(f"[INFO] Skipping unavailable package: {name}")
     return valid_packages
+
+
+def include_ui_frameworks(json_data, dependencies):
+    for package in json_data.get("technologies", []):
+        if any(category.get("slug") == "ui-frameworks" for category in package.get("categories", [])):
+            name = sanitize_package_name(package.get("name", ""))
+            version = package.get("version")
+            if name and version:
+                dependencies[name] = version
+                print(f"[INFO] Included UI framework: {name} ({version})")
+
+
+def extract_metadata(json_data):
+    metadata = []
+    for package in json_data.get("technologies", []):
+        if any(category.get("slug") == "ui-frameworks" for category in package.get("categories", [])):
+            metadata.append({
+                "name": package.get("name"),
+                "version": package.get("version"),
+                "description": package.get("description"),
+                "slug": "ui-frameworks"
+            })
+    return metadata
 
 
 def sanitize_package_name(name):
     sanitized_name = re.sub(r"[^a-zA-Z0-9-_]", "-", name).lower()
-    print(f"Sanitized package name: {name} -> {sanitized_name}")
+    print(f"[INFO] Sanitized package name: {name} -> {sanitized_name}")
     return sanitized_name
 
 
-def create_package_json(dependencies, output_path):
+def create_package_json(dependencies, metadata, output_path):
     if not dependencies:
-        print("No valid dependencies found. Exiting.")
-        exit(0)  # Exit gracefully if no valid dependencies are present
+        print("[ERROR] No valid dependencies found. Creating an empty package.json for scanning.")
+        dependencies = {}
 
     package_json = {
         "name": "vulnerability-check",
         "version": "1.0.0",
-        "dependencies": dependencies
+        "dependencies": dependencies,
+        "metadata": metadata  # Add metadata section for ui-frameworks
     }
     with open(output_path, "w") as f:
         json.dump(package_json, f, indent=4)
-    print(f"Generated {output_path}.")
+    print(f"[INFO] Generated {output_path}.")
 
+
+import subprocess
 
 def install_dependencies():
     try:
-        print("Creating package-lock.json...")
-        subprocess.run(["npm", "install", "--package-lock-only"], check=True)  # Create lock file only
-        print("Installing dependencies...")
-        subprocess.run(["npm", "install"], check=False)  # Allow errors for invalid packages
+        print("[INFO] Creating package-lock.json...")
+        result_lock = subprocess.run(
+            ["npm", "install", "--package-lock-only"], 
+            stdout=subprocess.PIPE,  # Suppress terminal output
+            stderr=subprocess.PIPE, 
+            text=True, 
+            check=True
+        )
+        
+        print("[INFO] Installing dependencies...")
+        result_install = subprocess.run(
+            ["npm", "install"], 
+            stdout=subprocess.PIPE,  # Suppress terminal output
+            stderr=subprocess.PIPE, 
+            text=True, 
+            check=False  # Allow errors
+        )
+        
+        # Optionally, process or log captured outputs if needed
+        if result_install.returncode != 0:
+            print(f"[WARNING] npm install completed with warnings/errors:\n{result_install.stderr}")
+
     except subprocess.CalledProcessError as e:
-        print(f"Error during npm install: {e}")
+        print(f"[ERROR] Error during npm install: {e.stderr.strip()}")
         exit(1)
 
 
-def run_npm_audit(audit_file):
+def run_npm_audit():
     try:
-        print("Running npm audit...")
-        result = subprocess.run(["npm", "audit"], capture_output=True, text=True, check=False)
+        print("[INFO] Checking for vulnerable packages...")
+        result = subprocess.run(
+            ["npm", "audit"], 
+            stdout=subprocess.PIPE,  # Capture standard output
+            stderr=subprocess.PIPE,  # Capture standard error
+            text=True, 
+            check=False
+        )
 
-        # Print the full audit report
+        # Print the audit results to the terminal
         print(result.stdout)
 
-        # Save the audit report to the specified file
-        with open(audit_file, "w") as f:
+        # Save the audit report to a file
+        with open("audit-report.txt", "w") as f:
             f.write(result.stdout)
-            print(f"Saved audit report to {audit_file}.")
+            print("[INFO] Saved audit report to audit-report.txt.")
     except subprocess.CalledProcessError as e:
-        print(f"Error during npm audit: {e.stderr}")
+        print(f"[ERROR] Error during npm audit: {e.stderr}")
         exit(1)
 
 
@@ -127,31 +188,37 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Check vulnerabilities in NPM packages based on JSON input.")
     parser.add_argument("input_file", type=str, help="Path to the input JSON file.")
-    parser.add_argument(
-        "--output-file",
-        type=str,
-        default="package.json",
-        help="Path to the output package.json file (default: package.json)."
-    )
-    parser.add_argument(
-        "--audit-file",
-        type=str,
-        default="audit-report.txt",
-        help="Path to save the audit report (default: audit-report.txt)."
-    )
     args = parser.parse_args()
 
+    # Read the input JSON
     json_data = read_input_json(args.input_file)
 
+    # Create a folder for the scan based on the input file name
+    input_file_name = Path(args.input_file).stem
+    output_folder = os.path.join(os.getcwd(), input_file_name)
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Change the working directory to the output folder
+    os.chdir(output_folder)
+
+    # Filter dependencies and include ui-frameworks
     dependencies = filter_packages(json_data)
+    include_ui_frameworks(json_data, dependencies)
 
-    create_package_json(dependencies, args.output_file)
+    # Extract metadata
+    metadata = extract_metadata(json_data)
 
+    # Create package.json with dependencies and metadata
+    package_json_path = os.path.join(output_folder, "package.json")
+    create_package_json(dependencies, metadata, package_json_path)
+
+    # print tech
+    print_technologies(json_data)
+
+    # Run npm install and npm audit
     install_dependencies()
+    run_npm_audit()
 
-    run_npm_audit(args.audit_file)
 
-
-# Entry point
 if __name__ == "__main__":
     main()
