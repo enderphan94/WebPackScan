@@ -51,6 +51,13 @@ Place main.py and scan.sh scripts in the wappalyzer folder
 
 ```./scan.sh <http://<url>>```
 
+## Docker
+
+```
+docker pull enderphan94/webpack:latest
+docker run --rm enderphan94/webpack <https://url>
+```
+
 **Console Output**
 
 ```
