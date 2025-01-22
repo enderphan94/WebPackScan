@@ -37,6 +37,10 @@ echo "[INFO] Using Node.js version 18..."
 nvm install 18
 nvm use 18
 
+export PUPPETEER_EXECUTABLE_PATH=$(which chromium)  # Set Chromium path
+export PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"  # Chromium args
+
+
 # Generate JSON output using the Node.js CLI
 JSON_FILE="${URL//[:\/]/_}.json"  # Replace ":" and "/" with "_" for the filename
 echo "[INFO] Generating JSON output for URL: $URL"

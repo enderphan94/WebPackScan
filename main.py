@@ -87,12 +87,28 @@ def filter_packages(json_data):
 
 def include_ui_frameworks(json_data, dependencies):
     for package in json_data.get("technologies", []):
+        # Check if the package belongs to the "ui-frameworks" category
         if any(category.get("slug") == "ui-frameworks" for category in package.get("categories", [])):
             name = sanitize_package_name(package.get("name", ""))
             version = package.get("version")
-            if name and version:
-                dependencies[name] = version
-                print(f"[INFO] Included UI framework: {name} ({version})")
+
+            if not name:
+                print(f"[INFO] Skipping UI framework with no name.")
+                continue
+
+            if not version:
+                print(f"[INFO] Skipping UI framework {name} with no version specified.")
+                continue
+
+            if is_package_available(name):
+                valid_versions = get_valid_versions(name)
+                if version in valid_versions:
+                    dependencies[name] = version
+                    print(f"[INFO] Included valid UI framework: {name}@{version}")
+                else:
+                    print(f"[INFO] Skipping UI framework {name} with invalid version {version}. Valid versions: {valid_versions}")
+            else:
+                print(f"[INFO] Skipping unavailable UI framework: {name}")
 
 
 def extract_metadata(json_data):
@@ -130,7 +146,6 @@ def create_package_json(dependencies, metadata, output_path):
     print(f"[INFO] Generated {output_path}.")
 
 
-import subprocess
 
 def install_dependencies():
     try:
