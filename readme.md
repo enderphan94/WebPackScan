@@ -26,27 +26,6 @@ npm install
 
 ## Manual
 
-**Step 1: Extract Packages**
-
-Use Wappalyzer to crawl a website and save the data:
-
-```node src/drivers/npm/cli.js https://example.com > input.json```
-
-**Step 2: Run the Script**
-
-Run the vulnerability checker:
-
-```python script_name.py input.json```
-
-**Example**
-
-```
-node src/drivers/npm/cli.js https://example.com >> input.json
-python script_name.py input.json
-```
-
-## Automated
-
 Place main.py and scan.sh scripts in the wappalyzer folder
 
 ```./scan.sh <http://<url>>```

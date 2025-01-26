@@ -181,19 +181,55 @@ def run_npm_audit():
         print("[INFO] Checking for vulnerable packages...")
         result = subprocess.run(
             ["npm", "audit"], 
-            stdout=subprocess.PIPE,  # Capture standard output
-            stderr=subprocess.PIPE,  # Capture standard error
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True, 
             check=False
         )
 
-        # Print the audit results to the terminal
-        print(result.stdout)
+        # Extract and print only the vulnerability information
+        output_lines = result.stdout.split('\n')
+        vulnerability_info = []
+        capturing = False
+        current_package = None
+        severity_count = None
 
-        # Save the audit report to a file
+        for line in output_lines:
+            # Skip npm audit report header
+            if line.startswith('# npm audit report'):
+                continue
+            # Capture severity count
+            elif 'severity vulnerability' in line or 'severity vulnerabilities' in line:
+                severity_count = line.strip()
+                break
+            # Skip empty lines unless we're in capturing mode
+            elif line.strip() == '':
+                if capturing and vulnerability_info:
+                    vulnerability_info.append(line)
+                continue
+            # Skip fix information lines
+            elif any(skip_text in line for skip_text in ['fix available', 'Will install', 'node_modules/']):
+                continue
+            # Capture package version line
+            elif not line.startswith(' ') and '  ' in line:  # Package version line
+                current_package = f"[VULNERABLE] {line.strip()}"  # Add [VULNERABLE] prefix
+                vulnerability_info.append(current_package)
+                capturing = True
+            # Capture severity and vulnerability information
+            elif 'Severity:' in line or (capturing and line.strip()):
+                vulnerability_info.append(line.strip())
+
+        if vulnerability_info:
+            print('\n'.join(vulnerability_info))
+            if severity_count:
+                print(severity_count)
+
+        # Save the filtered audit report to a file
         with open("audit-report.txt", "w") as f:
-            f.write(result.stdout)
-            print("[INFO] Saved audit report to audit-report.txt.")
+            f.write('\n'.join(vulnerability_info))
+            if severity_count:
+                f.write('\n' + severity_count)
+            print("[INFO] Saved filtered audit report to audit-report.txt.")
     except subprocess.CalledProcessError as e:
         print(f"[ERROR] Error during npm audit: {e.stderr}")
         exit(1)
