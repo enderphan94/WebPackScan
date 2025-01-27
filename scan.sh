@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Print header
+echo "+------------------------------------------+"
+echo "|                 PACKSCAN                 |"
+echo "+------------------------------------------+"
+echo "| DevBy     : github.com/enderphan94       |"
+echo "| InspiredBy: Wappalyzer                   |"
+echo "+------------------------------------------+"
+
 # Ensure the script exits on errors
 set -e
 
@@ -19,40 +27,34 @@ fi
 # Export PATH to include Go binaries
 export PATH=$PATH:$(go env GOPATH)/bin
 
-# Check if nvm is installed
+# Quietly check and install nvm if needed
 if ! command -v nvm &>/dev/null; then
-    echo "[INFO] nvm is not installed. Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-
-    # Load nvm into the current shell session
+    curl -s -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash >/dev/null 2>&1
     export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-else
-    echo "[INFO] nvm is already installed."
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" >/dev/null 2>&1
 fi
 
-# Ensure Node.js version 18 is installed and in use
-echo "[INFO] Using Node.js version 18..."
-nvm install 18
-nvm use 18
+# Quietly ensure Node.js version 18 is installed and in use
+nvm install 18 >/dev/null 2>&1
+nvm use 18 >/dev/null 2>&1
 
-export PUPPETEER_EXECUTABLE_PATH=$(which chromium)  # Set Chromium path
-export PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"  # Chromium args
+export PUPPETEER_EXECUTABLE_PATH=$(which chromium)
+export PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"
 
+# Run the subdomain scanner
+DOMAIN=$(echo "$URL" | sed -e 's/^https:\/\///')
+python3.10 scripts/subsh.py -u "$DOMAIN"
 
 # Generate JSON output using the Node.js CLI
-JSON_FILE="${URL//[:\/]/_}.json"  # Replace ":" and "/" with "_" for the filename
-echo "[INFO] Generating JSON output for URL: $URL"
-node src/drivers/npm/cli.js "$URL" > "$JSON_FILE"
+JSON_FILE="${URL//[:\/]/_}.json"
+node src/drivers/npm/cli.js "$URL" > "$JSON_FILE" 2>/dev/null
 
-# Run Python script to process the JSON
+# Check if Python 3.10 is available
 if ! command -v python3.10 &>/dev/null; then
     echo "[ERROR] Python 3.10 is not installed or not in PATH."
     exit 1
 fi
 
-echo "[INFO] Running Python script on JSON file: $JSON_FILE"
-python3.10 vulPack.py "$JSON_FILE"
-
-echo "[INFO] Scan completed successfully for URL: $URL"
+# Run vulnerability scan
+python3.10 scripts/vulPack.py "$JSON_FILE"
