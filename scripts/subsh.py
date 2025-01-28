@@ -109,4 +109,4 @@ with open(output_file, 'w') as file:
     for subdomain in alive_subdomains:
         file.write(f"{subdomain}\n")
 
-print(f"Alive subdomains saved to {output_file}")
+print(f"[INFO] Alive subdomains saved to {output_file}")

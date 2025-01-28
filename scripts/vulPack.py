@@ -65,23 +65,23 @@ def filter_packages(json_data):
     valid_packages = {}
     for package in json_data.get("technologies", []):
         if not any(category.get("slug") == "javascript-libraries" for category in package.get("categories", [])):
-            print(f"[INFO] Skipping package not in 'javascript-libraries': {package['name']}")
+            # print(f"[INFO] Skipping package not in 'javascript-libraries': {package['name']}")
             continue
 
         name = sanitize_package_name(package["name"])
         version = package.get("version")
         if not version:
-            print(f"[INFO] Skipping package with no version specified: {name}")
+            # print(f"[INFO] Skipping package with no version specified: {name}")
             continue
 
         if is_package_available(name):
             valid_versions = get_valid_versions(name)
             if version in valid_versions:
                 valid_packages[name] = version
-            else:
-                print(f"[INFO] Skipping package {name} with invalid version {version}. Valid versions: {valid_versions}")
-        else:
-            print(f"[INFO] Skipping unavailable package: {name}")
+            # else:
+                # print(f"[INFO] Skipping package {name} with invalid version {version}. Valid versions: {valid_versions}")
+        # else:
+        #     print(f"[INFO] Skipping unavailable package: {name}")
     return valid_packages
 
 
@@ -93,22 +93,22 @@ def include_ui_frameworks(json_data, dependencies):
             version = package.get("version")
 
             if not name:
-                print(f"[INFO] Skipping UI framework with no name.")
+                # print(f"[INFO] Skipping UI framework with no name.")
                 continue
 
             if not version:
-                print(f"[INFO] Skipping UI framework {name} with no version specified.")
+                # print(f"[INFO] Skipping UI framework {name} with no version specified.")
                 continue
 
             if is_package_available(name):
                 valid_versions = get_valid_versions(name)
                 if version in valid_versions:
                     dependencies[name] = version
-                    print(f"[INFO] Included valid UI framework: {name}@{version}")
-                else:
-                    print(f"[INFO] Skipping UI framework {name} with invalid version {version}. Valid versions: {valid_versions}")
-            else:
-                print(f"[INFO] Skipping unavailable UI framework: {name}")
+                    # print(f"[INFO] Included valid UI framework: {name}@{version}")
+            #     else:
+            #         print(f"[INFO] Skipping UI framework {name} with invalid version {version}. Valid versions: {valid_versions}")
+            # else:
+            #     print(f"[INFO] Skipping unavailable UI framework: {name}")
 
 
 def extract_metadata(json_data):
@@ -126,7 +126,7 @@ def extract_metadata(json_data):
 
 def sanitize_package_name(name):
     sanitized_name = re.sub(r"[^a-zA-Z0-9-_]", "-", name).lower()
-    print(f"[INFO] Sanitized package name: {name} -> {sanitized_name}")
+    # print(f"[INFO] Sanitized package name: {name} -> {sanitized_name}")
     return sanitized_name
 
 
@@ -149,7 +149,7 @@ def create_package_json(dependencies, metadata, output_path):
 
 def install_dependencies():
     try:
-        print("[INFO] Creating package-lock.json...")
+        # print("[INFO] Creating package-lock.json...")
         result_lock = subprocess.run(
             ["npm", "install", "--package-lock-only"], 
             stdout=subprocess.PIPE,  # Suppress terminal output
@@ -158,7 +158,7 @@ def install_dependencies():
             check=True
         )
         
-        print("[INFO] Installing dependencies...")
+        # print("[INFO] Installing dependencies...")
         result_install = subprocess.run(
             ["npm", "install"], 
             stdout=subprocess.PIPE,  # Suppress terminal output

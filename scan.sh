@@ -38,6 +38,7 @@ fi
 # Quietly ensure Node.js version 18 is installed and in use
 nvm install 18 >/dev/null 2>&1
 nvm use 18 >/dev/null 2>&1
+npm install >/dev/null 2>&1
 
 export PUPPETEER_EXECUTABLE_PATH=$(which chromium)
 export PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox"
